@@ -1,8 +1,6 @@
 import pandas as pd
-
-df = pd.read_csv("data/weather_clean.csv")
-
-df["DATE"] = pd.to_datetime(df["DATE"])
+import pandas as pd
+df = pd.read_csv("data/output/weather_clean.csv")
 
 result = (
     df
@@ -14,6 +12,15 @@ result = (
         avg_temp=("temperature", "mean"),
         max_wind=("wind_speed", "max")
     )
+    .reset_index()
 )
+
+
+
+
+
+print(df["STATION"].nunique())
+print(len(df))
+print(df.head())
 
 print(result)
