@@ -1,0 +1,5 @@
+RAW_TOPIC = "noaa.raw"
+READINGS_TOPIC = "weather.readings"
+
+LOCAL_BOOTSTRAP_SERVERS = "localhost:9092"
+DOCKER_BOOTSTRAP_SERVERS = "kafka:29092"
