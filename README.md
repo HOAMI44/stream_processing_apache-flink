@@ -6,12 +6,18 @@ This project runs a small stream pipeline for local NOAA Global Hourly CSV files
 data/<year>/<station>.csv -> producer -> noaa.raw -> PyFlink normalizer -> weather.readings
 ```
 
-PostgreSQL and Grafana are included for later analytical jobs. No result tables, schemas, dashboards, or use-case Flink jobs are created yet.
+PostgreSQL result tables for the use-case jobs are initialized from `init.sql`; Grafana can read those tables directly.
 
 ## Start
 
 ```bash
 docker compose up -d
+```
+
+Or start the full demo pipeline and Grafana dashboard:
+
+```bash
+./run_all.sh
 ```
 
 UIs:
@@ -69,3 +75,33 @@ docker compose exec flink-jobmanager flink run -py /opt/project/src/normalizer_j
 ```
 
 Inspect `noaa.raw`, `weather.readings`, offsets, and consumer groups in Kafka UI.
+
+## Test Use Cases
+
+```bash
+docker run --rm -v "$PWD":/opt/project -w /opt/project pyflink-kafka:1.20.1 python3 -m unittest src/tests.py
+```
+
+## Run Use-Case Jobs
+
+Each use case from `use_cases.md` has one PyFlink job in `src/use_cases/` and writes a Grafana-ready table in PostgreSQL:
+
+```bash
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc01_temperature_stats.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc02_data_quality.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc03_temperature_change.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc04_data_gaps.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc05_temperature_deviation.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc06_temperature_histogram.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc07_climate_trend.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc08_resort_recommendations.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc09_low_visibility.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc10_fire_risk.py
+```
+
+If the `postgres` volume already existed before these tables were added, recreate it once:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```

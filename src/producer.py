@@ -1,8 +1,9 @@
 import argparse
+import csv
 import json
 import logging
 import time
-from datetime import datetime, timezone
+from io import StringIO
 from pathlib import Path
 
 from kafka import KafkaProducer
@@ -10,6 +11,15 @@ from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import TopicAlreadyExistsError
 
 from config import LOCAL_BOOTSTRAP_SERVERS, RAW_TOPIC
+
+SUPPORTED_COLUMN_COUNT = 16
+
+
+def supported_raw_line(line):
+    row = next(csv.reader([line]))
+    out = StringIO()
+    csv.writer(out, lineterminator="").writerow(row[:SUPPORTED_COLUMN_COUNT])
+    return out.getvalue()
 
 
 def iter_rows(data_dir, year=None, station=None):
@@ -26,18 +36,19 @@ def iter_rows(data_dir, year=None, station=None):
                 for row_number, line in enumerate(f, start=2):
                     yield {
                         "source_file": path.as_posix(),
-                        "year": year_dir.name,
-                        "station_file": path.name,
                         "row_number": row_number,
-                        "raw_line": line.rstrip("\r\n"),
-                        "ingested_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                        "raw_line": supported_raw_line(line.rstrip("\r\n")),
                     }
 
 
 def ensure_topic(bootstrap_servers, topic):
-    admin = KafkaAdminClient(bootstrap_servers=bootstrap_servers, client_id="noaa-producer-admin")
+    admin = KafkaAdminClient(
+        bootstrap_servers=bootstrap_servers, client_id="noaa-producer-admin"
+    )
     try:
-        admin.create_topics([NewTopic(name=topic, num_partitions=1, replication_factor=1)])
+        admin.create_topics(
+            [NewTopic(name=topic, num_partitions=1, replication_factor=1)]
+        )
     except TopicAlreadyExistsError:
         pass
     finally:
@@ -55,14 +66,18 @@ def main():
     parser.add_argument("--station")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
+    )
     logging.getLogger("kafka").setLevel(logging.WARNING)
     ensure_topic(args.bootstrap_servers, args.topic)
     producer = KafkaProducer(bootstrap_servers=args.bootstrap_servers)
 
     sent = 0
     for event in iter_rows(args.data_dir, args.year, args.station):
-        producer.send(args.topic, json.dumps(event, separators=(",", ":")).encode("utf-8"))
+        producer.send(
+            args.topic, json.dumps(event, separators=(",", ":")).encode("utf-8")
+        )
         sent += 1
         if sent % 1000 == 0:
             logging.info("published %s records", sent)

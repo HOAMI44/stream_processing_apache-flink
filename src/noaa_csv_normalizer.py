@@ -1,7 +1,6 @@
 import csv
 from io import StringIO
 
-
 NOAA_COLUMNS = [
     "STATION",
     "DATE",
@@ -19,8 +18,6 @@ NOAA_COLUMNS = [
     "TMP",
     "DEW",
     "SLP",
-    "GF1",
-    "MW1",
 ]
 
 
@@ -55,7 +52,6 @@ def wind(raw):
     angle = None if len(parts) < 1 or parts[0] == "999" else number(parts[0])
     speed = None if len(parts) < 4 or parts[3] == "9999" else number(parts[3])
     return {
-        "raw": raw,
         "direction_angle": int(angle) if angle is not None else None,
         "direction_quality": parts[1] if len(parts) > 1 else None,
         "type": parts[2] if len(parts) > 2 else None,
@@ -68,14 +64,17 @@ def temperature(raw):
     parts = split(raw)
     value = signed_tenths(parts[0]) if parts else None
     quality = parts[1] if len(parts) > 1 else None
-    return {"raw": raw, "value_celsius": value, "quality": quality, "is_valid": value is not None}
+    return {
+        "value_celsius": value,
+        "quality": quality,
+        "is_valid": value is not None,
+    }
 
 
 def ceiling(raw):
     parts = split(raw)
     height = None if not parts or parts[0] == "99999" else number(parts[0])
     return {
-        "raw": raw,
         "height_meters": int(height) if height is not None else None,
         "quality": parts[1] if len(parts) > 1 else None,
         "determination": parts[2] if len(parts) > 2 else None,
@@ -87,7 +86,6 @@ def visibility(raw):
     parts = split(raw)
     distance = None if not parts or parts[0] == "999999" else number(parts[0])
     return {
-        "raw": raw,
         "distance_meters": int(distance) if distance is not None else None,
         "quality": parts[1] if len(parts) > 1 else None,
         "variability": parts[2] if len(parts) > 2 else None,
@@ -99,7 +97,6 @@ def pressure(raw):
     parts = split(raw)
     value = None if not parts or parts[0] == "99999" else number(parts[0])
     return {
-        "raw": raw,
         "value_hpa": value / 10 if value is not None else None,
         "quality": parts[1] if len(parts) > 1 else None,
         "is_valid": value is not None,
@@ -109,8 +106,6 @@ def pressure(raw):
 def normalize_raw_event(event):
     values = parse_csv_line(event.get("raw_line", ""))
     record = dict(zip(NOAA_COLUMNS, values))
-    if len(values) > len(NOAA_COLUMNS):
-        record["extra_columns"] = values[len(NOAA_COLUMNS) :]
 
     return {
         "station": record.get("STATION"),
@@ -129,24 +124,13 @@ def normalize_raw_event(event):
         "temperature": temperature(record.get("TMP", "")),
         "dew_point": temperature(record.get("DEW", "")),
         "sea_level_pressure": pressure(record.get("SLP", "")),
-        "sky_condition": {"raw": record.get("GF1", "")},
-        "present_weather": {"raw": record.get("MW1", "")},
         "columns": {k.lower(): v for k, v in record.items()},
-        "raw": {
-            "source_file": event.get("source_file"),
-            "year": event.get("year"),
-            "station_file": event.get("station_file"),
-            "row_number": event.get("row_number"),
-            "ingested_at": event.get("ingested_at"),
-        },
     }
 
 
 def _demo():
     event = {
         "source_file": "data/1901/02907099999.csv",
-        "year": "1901",
-        "station_file": "02907099999.csv",
         "row_number": 2,
         "raw_line": '"02907099999","1901-01-01T06:00:00","4","64.3333333","23.45","5.0","KALAJOKI ULKOKALLA, FI","FM-12","99999","V020","270,1,N,0159,1","99999,9,9,N","000000,1,N,9","-0078,1","+9999,9","10200,1","08,99,1,99,9,99,9,99999,9,99,9,99,9",""',
     }
@@ -155,6 +139,8 @@ def _demo():
     assert out["temperature"]["value_celsius"] == -7.8
     assert out["dew_point"]["is_valid"] is False
     assert out["wind"]["speed_rate"] == 15.9
+    assert "sky_condition" not in out
+    assert "gf1" not in out["columns"]
 
 
 if __name__ == "__main__":

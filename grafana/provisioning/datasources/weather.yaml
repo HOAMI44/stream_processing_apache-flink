@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: Weather Postgres
+    uid: weather-postgres
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: weather
+    user: weather
+    secureJsonData:
+      password: weather
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1700

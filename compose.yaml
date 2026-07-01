@@ -20,7 +20,7 @@ services:
 
   flink-jobmanager:
     build: .
-    image: pyflink-kafka:2.2.0
+    image: pyflink-kafka:1.20.1
     command: jobmanager
     ports:
       - "8081:8081"
@@ -32,14 +32,14 @@ services:
 
   flink-taskmanager:
     build: .
-    image: pyflink-kafka:2.2.0
+    image: pyflink-kafka:1.20.1
     command: taskmanager
     depends_on:
       - flink-jobmanager
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 2
+        taskmanager.numberOfTaskSlots: 12
     volumes:
       - .:/opt/project
 
@@ -53,6 +53,7 @@ services:
       POSTGRES_PASSWORD: weather
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
   grafana:
     image: grafana/grafana:12.0.2
@@ -63,6 +64,8 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
 
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:v1.5.0

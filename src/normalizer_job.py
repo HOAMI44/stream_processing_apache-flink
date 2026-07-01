@@ -21,14 +21,18 @@ def normalize_json(value):
     try:
         return json.dumps(normalize_raw_event(json.loads(value)), separators=(",", ":"))
     except Exception as exc:
-        return json.dumps({"normalization_error": str(exc), "raw_message": value}, separators=(",", ":"))
+        return json.dumps(
+            {"normalization_error": str(exc), "raw_message": value},
+            separators=(",", ":"),
+        )
 
 
 def main():
     bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", DOCKER_BOOTSTRAP_SERVERS)
     env = StreamExecutionEnvironment.get_execution_environment()
-    env.add_jars("file:///opt/flink/lib/flink-sql-connector-kafka-5.0.0-2.2.jar")
-    env.add_python_file(os.path.join(os.path.dirname(__file__), "noaa_csv_normalizer.py"))
+    env.add_python_file(
+        os.path.join(os.path.dirname(__file__), "noaa_csv_normalizer.py")
+    )
 
     source = (
         KafkaSource.builder()
