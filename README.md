@@ -22,7 +22,7 @@ Or start the full demo pipeline and Grafana dashboard:
 ./run_all.sh
 ```
 
-`run_all.sh` installs the Python producer requirements, starts Docker services, submits the normalizer and all use-case jobs, publishes the showcase dataset from `data/1901/showcase.csv`, and waits until the showcase dashboard outputs are present.
+`run_all.sh` installs the Python producer requirements, starts Docker services, submits the normalizer and all use-case jobs, then publishes the showcase dataset from `data/1901/showcase.csv`.
 
 The showcase producer sends one row per second by default so the Grafana panels fill progressively during the demo. Override it with `DELAY_MS=0 ./run_all.sh` for an instant publish.
 

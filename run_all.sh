@@ -11,7 +11,7 @@ fi
 DATA_DIR="${DATA_DIR:-data}"
 YEAR="${YEAR:-1901}"
 STATION="${STATION:-showcase.csv}"
-DELAY_MS="${DELAY_MS:-1000}"
+DELAY_MS="${DELAY_MS:-100}"
 MAX_RECORDS="${MAX_RECORDS:-}"
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:3000}"
 RUN_ID="${RUN_ID:-$(date +%s)}"
@@ -52,28 +52,6 @@ if overview.get("slots-total", 0) < 1:
     raise SystemExit(1)
 PY
   do
-    printf '.'
-    sleep 2
-  done
-  printf '\n'
-}
-
-wait_for_showcase_outputs() {
-  if [[ "$DATA_DIR/$YEAR/$STATION" != "data/1901/showcase.csv" || -n "$MAX_RECORDS" ]]; then
-    return
-  fi
-
-  printf 'Waiting for showcase outputs'
-  until docker compose exec -T postgres psql -U weather -d weather -At -c "
-WITH checks AS (
-  SELECT COUNT(*) >= 350 AS ok FROM uc01_temperature_stats
-  UNION ALL SELECT COALESCE(MAX(bad_count), 0) >= 5 FROM uc02_data_quality
-  UNION ALL SELECT COUNT(*) >= 30 FROM uc07_climate_trend
-  UNION ALL SELECT COUNT(*) >= 3 FROM uc09_low_visibility
-  UNION ALL SELECT COUNT(*) >= 12 FROM uc10_storm_warning
-)
-SELECT bool_and(ok) FROM checks;
-" | grep -qx t; do
     printf '.'
     sleep 2
   done
@@ -135,11 +113,10 @@ fi
 
 echo "Publishing data from $DATA_DIR/$YEAR/$STATION"
 python src/producer.py "${producer_args[@]}"
-wait_for_showcase_outputs
 
 cat <<EOF
 
-Done.
+Published input data. Flink jobs keep processing; dashboards can continue updating for a short while.
 Grafana:  $GRAFANA_URL/d/weather-use-cases/weather-use-cases
 Flink:    http://localhost:8081
 Kafka UI: http://localhost:8080
