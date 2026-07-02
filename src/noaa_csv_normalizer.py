@@ -47,16 +47,27 @@ def split(value):
     return value.split(",") if value else []
 
 
+def is_valid(value, quality):
+    return (
+        value is not None
+        and quality is not None
+        and quality not in {"2", "3", "6", "7"}
+    )
+
+
 def wind(raw):
     parts = split(raw)
     angle = None if len(parts) < 1 or parts[0] == "999" else number(parts[0])
     speed = None if len(parts) < 4 or parts[3] == "9999" else number(parts[3])
+    direction_quality = parts[1] if len(parts) > 1 else None
+    speed_quality = parts[4] if len(parts) > 4 else None
     return {
         "direction_angle": int(angle) if angle is not None else None,
-        "direction_quality": parts[1] if len(parts) > 1 else None,
+        "direction_quality": direction_quality,
         "type": parts[2] if len(parts) > 2 else None,
         "speed_rate": speed / 10 if speed is not None else None,
-        "speed_quality": parts[4] if len(parts) > 4 else None,
+        "speed_quality": speed_quality,
+        "speed_is_valid": is_valid(speed, speed_quality),
     }
 
 
@@ -67,39 +78,44 @@ def temperature(raw):
     return {
         "value_celsius": value,
         "quality": quality,
-        "is_valid": value is not None,
+        "is_valid": is_valid(value, quality),
     }
 
 
 def ceiling(raw):
     parts = split(raw)
     height = None if not parts or parts[0] == "99999" else number(parts[0])
+    quality = parts[1] if len(parts) > 1 else None
     return {
         "height_meters": int(height) if height is not None else None,
-        "quality": parts[1] if len(parts) > 1 else None,
+        "quality": quality,
         "determination": parts[2] if len(parts) > 2 else None,
         "cavok": parts[3] if len(parts) > 3 else None,
+        "is_valid": is_valid(height, quality),
     }
 
 
 def visibility(raw):
     parts = split(raw)
     distance = None if not parts or parts[0] == "999999" else number(parts[0])
+    quality = parts[1] if len(parts) > 1 else None
     return {
         "distance_meters": int(distance) if distance is not None else None,
-        "quality": parts[1] if len(parts) > 1 else None,
+        "quality": quality,
         "variability": parts[2] if len(parts) > 2 else None,
         "variability_quality": parts[3] if len(parts) > 3 else None,
+        "is_valid": is_valid(distance, quality),
     }
 
 
 def pressure(raw):
     parts = split(raw)
     value = None if not parts or parts[0] == "99999" else number(parts[0])
+    quality = parts[1] if len(parts) > 1 else None
     return {
         "value_hpa": value / 10 if value is not None else None,
-        "quality": parts[1] if len(parts) > 1 else None,
-        "is_valid": value is not None,
+        "quality": quality,
+        "is_valid": is_valid(value, quality),
     }
 
 
@@ -138,6 +154,7 @@ def _demo():
     assert out["station"] == "02907099999"
     assert out["temperature"]["value_celsius"] == -7.8
     assert out["dew_point"]["is_valid"] is False
+    assert temperature("-0078,3")["is_valid"] is False
     assert out["wind"]["speed_rate"] == 15.9
     assert "sky_condition" not in out
     assert "gf1" not in out["columns"]

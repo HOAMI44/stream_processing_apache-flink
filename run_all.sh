@@ -20,11 +20,11 @@ jobs=(
   use_cases/uc03_temperature_change.py
   use_cases/uc04_data_gaps.py
   use_cases/uc05_temperature_deviation.py
-  use_cases/uc06_temperature_histogram.py
+  use_cases/uc06_temperature_rankings.py
   use_cases/uc07_climate_trend.py
-  use_cases/uc08_resort_recommendations.py
+  use_cases/uc08_user_notifications.py
   use_cases/uc09_low_visibility.py
-  use_cases/uc10_fire_risk.py
+  use_cases/uc10_storm_warning.py
 )
 
 wait_for() {

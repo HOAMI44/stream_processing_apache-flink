@@ -92,11 +92,11 @@ docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc
 docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc03_temperature_change.py
 docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc04_data_gaps.py
 docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc05_temperature_deviation.py
-docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc06_temperature_histogram.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc06_temperature_rankings.py
 docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc07_climate_trend.py
-docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc08_resort_recommendations.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc08_user_notifications.py
 docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc09_low_visibility.py
-docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc10_fire_risk.py
+docker compose exec flink-jobmanager flink run -py /opt/project/src/use_cases/uc10_storm_warning.py
 ```
 
 If the `postgres` volume already existed before these tables were added, recreate it once:
