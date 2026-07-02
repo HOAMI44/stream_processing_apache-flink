@@ -12,11 +12,7 @@ PostgreSQL result tables for the use-case jobs are initialized from `init.sql`; 
 
 ## Start
 
-```bash
-docker compose up -d
-```
-
-Or start the full demo pipeline and Grafana dashboard:
+Start the full demo pipeline and Grafana dashboard:
 
 ```bash
 ./run_all.sh
@@ -25,6 +21,12 @@ Or start the full demo pipeline and Grafana dashboard:
 `run_all.sh` installs the Python producer requirements, starts Docker services, submits the normalizer and all use-case jobs, then publishes the showcase dataset from `data/1901/showcase.csv`.
 
 The showcase producer sends one row per second by default so the Grafana panels fill progressively during the demo. Override it with `DELAY_MS=0 ./run_all.sh` for an instant publish.
+
+Or just the compose stack:
+
+```bash
+docker compose up -d
+```
 
 UIs:
 
@@ -44,13 +46,13 @@ Put NOAA Global Hourly CSV files under:
 
 ```text
 data/
-  2023/
+  1901/
     <station>.csv
-  2024/
+  1902/
     <station>.csv
 ```
 
-The current sample data uses the same layout with older years. For the Grafana demo, use `data/1901/showcase.csv`; it is tailored to close the event-time windows and populate every use-case panel.
+For the Grafana demo, use `data/1901/showcase.csv`; it is tailored to close the event-time windows and populate every use-case panel.
 
 ## Run Producer
 
