@@ -120,6 +120,7 @@ class FlinkUseCaseTests(unittest.TestCase):
             )
             if streaming:
                 stream_env = StreamExecutionEnvironment.get_execution_environment()
+                stream_env.set_parallelism(1)
                 env = StreamTableEnvironment.create(
                     stream_execution_environment=stream_env
                 )
@@ -177,6 +178,7 @@ class FlinkUseCaseTests(unittest.TestCase):
                 reading("B", "1901-01-01T01:00:00", 13.0),
             ],
             uc03.query,
+            streaming=True,
         )
 
         got = {(r[0], str(r[1])): r[2] for r in rows}
@@ -194,6 +196,7 @@ class FlinkUseCaseTests(unittest.TestCase):
                 reading("B", "1901-01-01T02:00:00", 2.0),
             ],
             uc04.query,
+            streaming=True,
         )
 
         got = {(r[0], str(r[2])): r[3] for r in rows}
@@ -224,6 +227,7 @@ class FlinkUseCaseTests(unittest.TestCase):
                 reading("C", "1901-01-01T00:00:00", 31.0),
             ],
             uc06.query,
+            streaming=True,
         )
 
         got = {
@@ -245,11 +249,12 @@ class FlinkUseCaseTests(unittest.TestCase):
                 reading("B", "1901-01-20T00:00:00", 5.0),
             ],
             uc07.query,
+            streaming=True,
         )
 
-        full = {r[0]: r for r in rows if str(r[1]) == "1901-01-01 00:00:00"}
-        self.assertEqual((10.0, "rising"), full["A"][3:5])
-        self.assertEqual((0.0, "stable"), full["B"][3:5])
+        got = {(r[0], str(r[1])): r[3:5] for r in rows}
+        self.assertEqual((15.0, "rising"), got[("A", "1901-01-03 00:00:00")])
+        self.assertEqual((0.0, "stable"), got[("B", "1901-01-03 00:00:00")])
 
     def test_uc08_user_notifications(self):
         rows = self.query(
@@ -310,6 +315,7 @@ class FlinkUseCaseTests(unittest.TestCase):
                 reading("C", "1901-01-01T00:30:00", 5.0, wind=25.0, pressure=1010.0),
             ],
             uc10.query,
+            streaming=True,
         )
 
         stations = {r[0] for r in rows}

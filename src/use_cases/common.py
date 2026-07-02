@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime, timezone
 
 from pyflink.table import (
     DataTypes,
@@ -18,6 +19,24 @@ POSTGRES_URL = os.getenv("POSTGRES_URL", "jdbc:postgresql://postgres:5432/weathe
 POSTGRES_USER = os.getenv("POSTGRES_USER", "weather")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "weather")
 SINK_NAME = "sink"
+
+
+def utc_millis_to_text(timestamp_ms):
+    return (
+        datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+        .replace(tzinfo=None)
+        .strftime("%Y-%m-%d %H:%M:%S")
+    )
+
+
+def datetime_to_utc_millis(value):
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return int(value.astimezone(timezone.utc).timestamp() * 1000)
+
+
+def iso_to_utc_millis(value):
+    return datetime_to_utc_millis(datetime.fromisoformat(value))
 
 
 def readings_schema():
@@ -108,6 +127,8 @@ def readings_schema():
 
 def register_readings(env, group_id):
     bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", DOCKER_BOOTSTRAP_SERVERS)
+    group_suffix = os.getenv("CONSUMER_GROUP_SUFFIX", "")
+    group_id = f"{group_id}-{group_suffix}" if group_suffix else group_id
     env.create_temporary_table(
         "weather_readings",
         TableDescriptor.for_connector("kafka")

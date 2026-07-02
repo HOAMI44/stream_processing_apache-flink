@@ -29,6 +29,10 @@ def normalize_json(value):
 
 def main():
     bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", DOCKER_BOOTSTRAP_SERVERS)
+    group_suffix = os.getenv("CONSUMER_GROUP_SUFFIX", "")
+    group_id = "noaa-normalizer"
+    if group_suffix:
+        group_id = f"{group_id}-{group_suffix}"
     env = StreamExecutionEnvironment.get_execution_environment()
     env.add_python_file(
         os.path.join(os.path.dirname(__file__), "noaa_csv_normalizer.py")
@@ -37,7 +41,7 @@ def main():
     source = (
         KafkaSource.builder()
         .set_topics(RAW_TOPIC)
-        .set_group_id("noaa-normalizer")
+        .set_group_id(group_id)
         .set_bootstrap_servers(bootstrap)
         .set_starting_offsets(KafkaOffsetsInitializer.earliest())
         .set_value_only_deserializer(SimpleStringSchema())

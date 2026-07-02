@@ -5,7 +5,7 @@ datasources:
     uid: weather-postgres
     type: postgres
     access: proxy
-    url: postgres:5432
+    url: host.docker.internal:5432
     database: weather
     user: weather
     secureJsonData:

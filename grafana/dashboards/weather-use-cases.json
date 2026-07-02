@@ -2,14 +2,18 @@
   "uid": "weather-use-cases",
   "title": "Weather Use Cases",
   "timezone": "browser",
+  "time": {
+    "from": "1901-01-01T00:00:00.000Z",
+    "to": "1901-03-31T23:59:59.000Z"
+  },
   "schemaVersion": 41,
-  "version": 3,
+  "version": 7,
   "refresh": "10s",
   "panels": [
     {
       "id": 1,
       "type": "timeseries",
-      "title": "UC01 Avg Temperature by Station",
+      "title": "UC01 Temperature Windows",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -32,7 +36,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 8,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -40,12 +44,12 @@
               "viz": false
             },
             "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -86,14 +90,14 @@
           "refId": "A",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT window_start AS \"time\", station || ' ' || window_size AS metric, avg_temp_c AS value\nFROM uc01_temperature_stats\nORDER BY window_start"
+          "rawSql": "SELECT window_start AS \"time\", substr(station, 1, 6) || '-' || substr(station, 7) || ' ' || window_size AS metric, avg_temp_c AS value\nFROM uc01_temperature_stats\nORDER BY window_start"
         }
       ]
     },
     {
       "id": 2,
-      "type": "bargauge",
-      "title": "UC02 Latest Bad Data Ratio",
+      "type": "timeseries",
+      "title": "UC02 Invalid Temperature Readings in Rolling 1h Windows",
       "gridPos": {
         "x": 12,
         "y": 0,
@@ -106,6 +110,39 @@
       },
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 18,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -113,43 +150,33 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.05
-              },
-              {
-                "color": "red",
-                "value": 0.2
               }
             ]
           },
-          "unit": "percentunit",
-          "max": 1
+          "unit": "short"
         },
         "overrides": []
       },
       "options": {
-        "displayMode": "gradient",
-        "minVizHeight": 10,
-        "minVizWidth": 0,
-        "namePlacement": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT window_start AS \"time\", station AS metric, bad_count AS value\nFROM uc02_data_quality\nORDER BY window_start"
+          "rawSql": "SELECT window_start AS \"time\",\n       substr(station, 1, 6) || '-' || substr(station, 7) AS metric,\n       bad_count AS value\nFROM uc02_data_quality\nWHERE bad_count > 0\nORDER BY window_start"
         }
       ]
     },
@@ -179,7 +206,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 8,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -187,12 +214,12 @@
               "viz": false
             },
             "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -233,164 +260,17 @@
           "refId": "A",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT event_time AS \"time\", station AS metric, change_c_per_hour AS value\nFROM uc03_temperature_change\nORDER BY event_time"
+          "rawSql": "SELECT event_time AS \"time\", substr(station, 1, 6) || '-' || substr(station, 7) AS metric, change_c_per_hour AS value\nFROM uc03_temperature_change\nWHERE ABS(change_c_per_hour) <= 30\nORDER BY event_time"
         }
       ]
     },
     {
       "id": 4,
-      "type": "bargauge",
-      "title": "UC04 Latest Data Gap Hours",
+      "type": "barchart",
+      "title": "UC04 Data Gap Intervals by Station",
       "gridPos": {
         "x": 12,
         "y": 8,
-        "w": 12,
-        "h": 8
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "weather-postgres"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 2
-              },
-              {
-                "color": "red",
-                "value": 6
-              }
-            ]
-          },
-          "unit": "none",
-          "max": 24
-        },
-        "overrides": []
-      },
-      "options": {
-        "displayMode": "gradient",
-        "minVizHeight": 10,
-        "minVizWidth": 0,
-        "namePlacement": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT interval_end AS \"time\", station AS metric, CASE WHEN status = 'incomplete' THEN 1 ELSE 0 END AS value\nFROM uc04_data_gaps\nORDER BY interval_end"
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "type": "timeseries",
-      "title": "UC05 Temperature Deviation",
-      "gridPos": {
-        "x": 0,
-        "y": 16,
-        "w": 12,
-        "h": 8
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "weather-postgres"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "celsius"
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT window_start AS \"time\", station AS metric, deviation_c AS value\nFROM uc05_temperature_deviation\nORDER BY window_start"
-        }
-      ]
-    },
-    {
-      "id": 6,
-      "type": "barchart",
-      "title": "UC06 Latest Temperature Rankings",
-      "gridPos": {
-        "x": 12,
-        "y": 16,
         "w": 12,
         "h": 8
       },
@@ -455,14 +335,182 @@
           "refId": "A",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT list_name || ' #' || rank_position AS rank, station, temp_c\nFROM uc06_temperature_rankings\nWHERE window_start = (SELECT MAX(window_start) FROM uc06_temperature_rankings)\nORDER BY list_name, rank_position"
+          "rawSql": "SELECT substr(station, 1, 6) || '-' || substr(station, 7) AS station,\n       COUNT(*) FILTER (WHERE status = 'complete') AS complete,\n       COUNT(*) FILTER (WHERE status = 'incomplete') AS incomplete\nFROM uc04_data_gaps\nGROUP BY station\nORDER BY station"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "UC05 Temperature Deviation",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "weather-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT window_start AS \"time\", substr(station, 1, 6) || '-' || substr(station, 7) AS metric, deviation_c AS value\nFROM uc05_temperature_deviation\nORDER BY window_start"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "UC06 Latest Temperature Rankings",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "weather-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "temp_c"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT list_name,\n       rank_position,\n       substr(station, 1, 6) || '-' || substr(station, 7) AS station,\n       temp_c\nFROM uc06_temperature_rankings\nWHERE window_start = (SELECT MAX(window_start) FROM uc06_temperature_rankings)\nORDER BY list_name, rank_position"
         }
       ]
     },
     {
       "id": 7,
-      "type": "timeseries",
-      "title": "UC07 30-Day Climate Trend",
+      "type": "state-timeline",
+      "title": "UC07 30-Day Climate Trend Direction",
       "gridPos": {
         "x": 0,
         "y": 24,
@@ -508,7 +556,33 @@
               "mode": "off"
             }
           },
-          "mappings": [],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "gray",
+                  "index": 0,
+                  "text": "unknown"
+                },
+                "1": {
+                  "color": "blue",
+                  "index": 1,
+                  "text": "falling"
+                },
+                "2": {
+                  "color": "green",
+                  "index": 2,
+                  "text": "stable"
+                },
+                "3": {
+                  "color": "orange",
+                  "index": 3,
+                  "text": "rising"
+                }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -518,19 +592,22 @@
               }
             ]
           },
-          "unit": "celsius"
+          "unit": "short"
         },
         "overrides": []
       },
       "options": {
+        "alignValue": "left",
         "legend": {
-          "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
         "tooltip": {
-          "mode": "multi",
+          "mode": "single",
           "sort": "none"
         }
       },
@@ -539,7 +616,7 @@
           "refId": "A",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT window_start AS \"time\", station AS metric, avg_temp_c AS value\nFROM uc07_climate_trend\nORDER BY window_start"
+          "rawSql": "SELECT window_start AS time,\n       substr(station, 1, 6) || '-' || substr(station, 7) AS metric,\n       CASE trend_direction\n           WHEN 'falling' THEN 1\n           WHEN 'stable' THEN 2\n           WHEN 'rising' THEN 3\n           ELSE 0\n       END AS value\nFROM uc07_climate_trend\nORDER BY time"
         }
       ]
     },
@@ -614,7 +691,7 @@
           "refId": "A",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT alert, COUNT(*) AS users\nFROM uc08_user_notifications\nGROUP BY alert\nORDER BY alert"
+          "rawSql": "SELECT user_id || ' / ' || resort_id AS recipient, COUNT(*) AS alerts\nFROM uc08_user_notifications\nGROUP BY user_id, resort_id\nORDER BY recipient"
         }
       ]
     },
@@ -676,7 +753,7 @@
         },
         "orientation": "auto",
         "showValue": "auto",
-        "stacking": "normal",
+        "stacking": "none",
         "tooltip": {
           "mode": "single",
           "sort": "none"
@@ -689,14 +766,14 @@
           "refId": "A",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT station || ' / ' || to_char(period_start, 'YYYY-MM-DD HH24:MI') AS period, duration_hours\nFROM uc09_low_visibility\nORDER BY period_start DESC\nLIMIT 50"
+          "rawSql": "SELECT substr(station, 1, 6) || '-' || substr(station, 7) || ' / ' || to_char(period_start, 'MM-DD HH24:MI') AS period,\n       duration_hours\nFROM uc09_low_visibility\nORDER BY period_start"
         }
       ]
     },
     {
       "id": 10,
-      "type": "bargauge",
-      "title": "UC10 Latest Storm Warning",
+      "type": "table",
+      "title": "UC10 Storm Warning Events",
       "gridPos": {
         "x": 12,
         "y": 32,
@@ -709,6 +786,26 @@
       },
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -723,31 +820,28 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": []
       },
       "options": {
-        "displayMode": "gradient",
-        "minVizHeight": 10,
-        "minVizWidth": 0,
-        "namePlacement": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
           "fields": "",
-          "values": false
+          "reducer": [
+            "sum"
+          ],
+          "show": false
         },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
+        "showHeader": true
       },
       "targets": [
         {
           "refId": "A",
-          "format": "time_series",
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT window_start AS \"time\", station AS metric, pressure_drop_hpa_per_hour AS value\nFROM uc10_storm_warning\nORDER BY window_start"
+          "rawSql": "SELECT substr(station, 1, 6) || '-' || substr(station, 7) AS station,\n       window_start,\n       ROUND(pressure_drop_hpa_per_hour::numeric, 1) AS \"pressure drop (hPa/h)\",\n       ROUND(max_wind_kmh::numeric, 1) AS \"max wind (km/h)\",\n       alert\nFROM uc10_storm_warning\nORDER BY window_start DESC\nLIMIT 20"
         }
       ]
     }

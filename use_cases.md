@@ -40,7 +40,7 @@
 
 - 2 Rapid temperature change detection: Rate of change computed as f(x*t, x*(t-1)) / Δt (°C/h) between consecutive readings → detects sudden warming or cooling events per station.
 
-**Implementation:** We use `LAG` per station ordered by event time to read the previous temperature and timestamp. A small UDF calculates the temperature change in Celsius per hour, and the job outputs station, event time, and `change_c_per_hour`.
+**Implementation:** We use the DataStream API with keyed state per station to remember the previous temperature and timestamp. The job calculates the temperature change in Celsius per hour between consecutive readings and outputs station, event time, and `change_c_per_hour`.
 
 ## Pattern: Classification of time interval
 
@@ -52,7 +52,7 @@
 
 - 9 Identify data gaps: Classify an interval as complete or incomplete by checking for missing days/hours per station.
 
-**Implementation:** We use `LAG` per station to compare each reading with the previous reading. If the time between them is at most 1 hour the interval is classified as `complete`; otherwise it is `incomplete`.
+**Implementation:** We use the DataStream API with keyed state per station to compare each reading with the previous reading. If the time between them is at most 1 hour the interval is classified as `complete`; otherwise it is `incomplete`.
 
 ## Pattern: Summary Statistics derived by comparing values within multiple intervals
 
@@ -80,7 +80,7 @@
 
 - 5 Continuously Show the Top 10 Hottest and Coldest Stations: Top-N ranking within a 24-hour window over all incoming temperature measurements → two continuously updated ordered lists.
 
-**Implementation:** We use a SQL hop window of 24 hours with a 1-hour slide. For each station/window we calculate its hottest and coldest temperature, rank stations with `ROW_NUMBER`, and output the top 10 hottest and top 10 coldest entries as separate `list_name` values.
+**Implementation:** We use the DataStream API with a 24-hour sliding event-time window that advances every 1 hour. For each window we calculate each station's hottest and coldest temperature, rank stations, and output the top 10 hottest and top 10 coldest entries as separate `list_name` values.
 
 ## Pattern: Simple Forecasting
 
@@ -94,7 +94,7 @@
 
 - 8 Climate Change Trend Monitoring: Moving averages over 30-day windows per station → detect long-term temperature trends in real time.
 
-**Implementation:** We calculate a 30-day sliding average temperature per station with a 10-day slide. Then we use `LAG` over the window averages to compare each window with the previous one and output a trend direction of `rising`, `falling`, `stable`, or `unknown`.
+**Implementation:** We use the DataStream API to calculate a 30-day sliding average temperature per station with a 10-day slide. Keyed state then compares each station's window average with the previous emitted window average and outputs `rising`, `falling`, `stable`, or `unknown`.
 
 ## Pattern: Stream Join
 
@@ -124,7 +124,7 @@
 
 **Implementation:** We implemented this one with the DataStream API because it is stateful open/close logic. Per station we remember the start time when visibility drops below 200 m, emit a period when visibility recovers, and output station, start, end, and duration in hours.
 
-## Pattern: Pattern: Multi-Signal Composite Event Detection
+## Pattern: Multi-Signal Composite Event Detection
 
 > Detect a named complex event by combining multiple independent measurement dimensions or signal streams within a time window. No single signal is sufficient; the event is declared only when a defined combination of conditions holds simultaneously or in temporal sequence across signals.
 
@@ -136,4 +136,4 @@
 
 - 1 Echtzeit-Unwetterwarnung: Pressure drop > 5 hPa/h AND wind > 80 km/h simultaneously in a 60-min sliding window → storm event alert pushed to warning systems.
 
-**Implementation:** We use valid pressure and wind readings only. `LAG` gets the previous pressure per station, a UDF converts the pressure change into hPa per hour, then a 60-minute sliding window with a 10-minute slide keeps windows where max pressure drop is above 5 hPa/h and max wind is above 80 km/h.
+**Implementation:** We use the DataStream API over valid pressure and wind readings only. Keyed state gets the previous pressure per station, calculates the pressure change in hPa per hour, then a 60-minute sliding event-time window with a 10-minute slide keeps windows where max pressure drop is above 5 hPa/h and max wind is above 80 km/h.

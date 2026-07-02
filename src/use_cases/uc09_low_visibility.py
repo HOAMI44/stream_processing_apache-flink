@@ -29,7 +29,7 @@ class LowVisibilityPeriods(KeyedProcessFunction):
             ValueStateDescriptor("period_start", Types.SQL_TIMESTAMP())
         )
 
-    def process_element(self, value, ctx):
+    def process_element(self, value, _ctx):
         station, event_time, visibility_m = value
         period_start = self.period_start.value()
 
@@ -43,7 +43,12 @@ class LowVisibilityPeriods(KeyedProcessFunction):
 
         duration_hours = int((event_time - period_start).total_seconds() // 3600)
         self.period_start.clear()
-        yield Row(station, period_start, event_time, duration_hours)
+        yield Row(
+            station,
+            period_start.strftime("%Y-%m-%d %H:%M:%S"),
+            event_time.strftime("%Y-%m-%d %H:%M:%S"),
+            duration_hours,
+        )
 
 
 def query(env):
@@ -63,11 +68,11 @@ def query(env):
         .process(
             LowVisibilityPeriods(),
             output_type=Types.ROW_NAMED(
-                ["station", "period_start", "period_end", "duration_hours"],
+                ["station", "period_start_raw", "period_end_raw", "duration_hours"],
                 [
                     Types.STRING(),
-                    Types.SQL_TIMESTAMP(),
-                    Types.SQL_TIMESTAMP(),
+                    Types.STRING(),
+                    Types.STRING(),
                     Types.LONG(),
                 ],
             ),
@@ -79,11 +84,16 @@ def query(env):
         schema(
             [
                 ("station", DataTypes.STRING()),
-                ("period_start", DataTypes.TIMESTAMP(3)),
-                ("period_end", DataTypes.TIMESTAMP(3)),
+                ("period_start_raw", DataTypes.STRING()),
+                ("period_end_raw", DataTypes.STRING()),
                 ("duration_hours", DataTypes.BIGINT()),
             ]
         ),
+    ).select(
+        col("station"),
+        call_sql("CAST(period_start_raw AS TIMESTAMP(3))").alias("period_start"),
+        call_sql("CAST(period_end_raw AS TIMESTAMP(3))").alias("period_end"),
+        col("duration_hours"),
     )
 
 
