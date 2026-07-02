@@ -1,3 +1,9 @@
+import os
+import time
+
+os.environ["TZ"] = "UTC"
+time.tzset()
+
 import json
 import sys
 import tempfile
